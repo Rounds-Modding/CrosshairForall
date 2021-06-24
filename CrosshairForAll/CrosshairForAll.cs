@@ -10,7 +10,7 @@ using System.Runtime.CompilerServices;
 namespace CrosshairForAll 
 {
     [BepInDependency("com.willis.rounds.unbound", BepInDependency.DependencyFlags.HardDependency)]
-    [BepInPlugin(ModId, ModName, "0.0.0.0")]
+    [BepInPlugin(ModId, ModName, "0.0.0.1")]
     [BepInProcess("Rounds.exe")]
     public class CrosshairForAll : BaseUnityPlugin
     {
@@ -99,11 +99,8 @@ namespace CrosshairForAll
 
         void Update()
         {
-            if (!CrosshairForAll.ModActive.Value)
-            {
-                this.crosshairRenderer.enabled = CrosshairForAll.ModActive.Value;
-                return;
-            }
+            this.crosshairRenderer.enabled = CrosshairForAll.ModActive.Value;
+            
 
             if (this.player == null)
             {
@@ -120,7 +117,7 @@ namespace CrosshairForAll
 
             if (this.input.controlledElseWhere)
             {
-                this.crosshairRenderer.enabled = CrosshairForAll.ShowEnemyCrosshairs.Value;
+                this.crosshairRenderer.enabled = (CrosshairForAll.ModActive.Value && CrosshairForAll.ShowEnemyCrosshairs.Value);
             }
             else if (this.input.inputType == GeneralInput.InputType.Keyboard)
             {
@@ -136,7 +133,7 @@ namespace CrosshairForAll
                 this.crosshairRenderer.color = Color.white;
             }
 
-            if (this.player.data.dead || !(bool)Traverse.Create(this.player.data.playerVel).Field("simulated").GetValue())
+            if (this.player.data.dead)
             {
                 this.crosshairRenderer.enabled = false;
             }

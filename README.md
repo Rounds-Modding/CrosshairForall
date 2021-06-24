@@ -7,4 +7,7 @@ Crosshairs can be white, or match the color of their player. You can change thes
 
 ## Version Notes
 
-v0.0.0.0: Initial Release
+- v0.0.0.0: Initial Release
+
+- v0.0.0.1: Hotfix
+    - Fixed bug in settings logic that caused local controller players to lose their crosshair
