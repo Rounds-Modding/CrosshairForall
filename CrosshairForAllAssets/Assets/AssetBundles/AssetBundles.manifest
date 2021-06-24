@@ -1,0 +1,10 @@
+ManifestFileVersion: 0
+CRC: 2482418561
+AssetBundleManifest:
+  AssetBundleInfos:
+    Info_0:
+      Name: crosshaircolored
+      Dependencies: {}
+    Info_1:
+      Name: crosshairwhite
+      Dependencies: {}
