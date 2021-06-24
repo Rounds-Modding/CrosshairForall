@@ -54,43 +54,13 @@ namespace CrosshairForAll
 
 
     }
-    // ADD FIELDS TO GUN
-    [Serializable]
-    public class GunAdditionalData
-    {
-        public bool needsCrosshair = true;
 
-        public GunAdditionalData()
-        {
-            needsCrosshair = true;
-        }
-    }
-    public static class GunExtension
-    {
-        public static readonly ConditionalWeakTable<Gun, GunAdditionalData> data =
-            new ConditionalWeakTable<Gun, GunAdditionalData>();
-
-        public static GunAdditionalData GetAdditionalData(this Gun gun)
-        {
-            return data.GetOrCreateValue(gun);
-        }
-
-        public static void AddData(this Gun gun, GunAdditionalData value)
-        {
-            try
-            {
-                data.Add(gun, value);
-            }
-            catch (Exception) { }
-        }
-    }
     // make sure that guns ask for a crosshair after being instantiated
     [HarmonyPatch(typeof(Gun), "Start")]
     class GunPatchResetStats
     {
         private static void Postfix(Gun __instance)
         {
-            //__instance.GetAdditionalData().needsCrosshair = true;
             GameObject crosshair = GameObject.Instantiate(CrosshairForAll.Assets.LoadAsset<GameObject>("CrosshairAsSprite"), __instance.gameObject.transform.position, __instance.gameObject.transform.rotation, __instance.gameObject.transform);
             crosshair.gameObject.transform.localScale = new Vector3(3f, 3f, 3f);
             crosshair.gameObject.transform.localPosition = new Vector3(0f, 5f, 0f);
@@ -129,7 +99,11 @@ namespace CrosshairForAll
 
         void Update()
         {
-            this.crosshairRenderer.enabled = CrosshairForAll.ModActive.Value;
+            if (!CrosshairForAll.ModActive.Value)
+            {
+                this.crosshairRenderer.enabled = CrosshairForAll.ModActive.Value;
+                return;
+            }
 
             if (this.player == null)
             {
@@ -162,10 +136,15 @@ namespace CrosshairForAll
                 this.crosshairRenderer.color = Color.white;
             }
 
+            if (this.player.data.dead || !(bool)Traverse.Create(this.player.data.playerVel).Field("simulated").GetValue())
+            {
+                this.crosshairRenderer.enabled = false;
+            }
 
         }
         public void OnDestroy()
         {
+            if (this.crosshair != null) { Destroy(this.crosshair); }
         }
 
         public void Destroy()
