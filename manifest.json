@@ -1,6 +1,6 @@
 {
     "name": "CrosshairForAll",
-    "version_number": "0.0.1",
+    "version_number": "0.0.2",
     "website_url": "https://github.com/Rounds-Modding/CrosshairForall",
     "description": "Adds crosshairs for controller players and optionally enemy players.",
     "dependencies": [

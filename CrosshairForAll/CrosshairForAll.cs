@@ -57,10 +57,13 @@ namespace CrosshairForAll
 
     // make sure that guns ask for a crosshair after being instantiated
     [HarmonyPatch(typeof(Gun), "Start")]
-    class GunPatchResetStats
+    class GunPatchStart
     {
         private static void Postfix(Gun __instance)
         {
+            // is the gun a child of something other than a player? if so, don't give it a crosshair
+            if (__instance.gameObject.GetComponent<Holdable>() == null) { return; }
+
             GameObject crosshair = GameObject.Instantiate(CrosshairForAll.Assets.LoadAsset<GameObject>("CrosshairAsSprite"), __instance.gameObject.transform.position, __instance.gameObject.transform.rotation, __instance.gameObject.transform);
             crosshair.gameObject.transform.localScale = new Vector3(3f, 3f, 3f);
             crosshair.gameObject.transform.localPosition = new Vector3(0f, 5f, 0f);

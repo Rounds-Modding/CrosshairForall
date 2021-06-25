@@ -11,3 +11,6 @@ Crosshairs can be white, or match the color of their player. You can change thes
 
 - v0.0.0.1: Hotfix
     - Fixed bug in settings logic that caused local controller players to lose their crosshair
+
+- v0.0.0.2: Bugfix
+    - Fixed bug that caused custom cards to flicker
