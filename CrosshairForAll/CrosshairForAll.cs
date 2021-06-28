@@ -12,7 +12,7 @@ using System.Reflection;
 namespace CrosshairForAll 
 {
     [BepInDependency("com.willis.rounds.unbound", BepInDependency.DependencyFlags.HardDependency)]
-    [BepInPlugin(ModId, ModName, "0.0.0.1")]
+    [BepInPlugin(ModId, ModName, "0.1.0.0")]
     [BepInProcess("Rounds.exe")]
     public class CrosshairForAll : BaseUnityPlugin
     {
