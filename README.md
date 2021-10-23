@@ -37,6 +37,11 @@ Crosshairs for both controller players and enemy players can have their distance
         - For the "Smooth" control scheme, hold the right stick button (R3) to increase the distance and hold the left stick button (L3) to decrease it
     - Added options for crosshair distance scaling with projectile speed
 
+- v1.0.1: Maintenance
+    - Migrated to new UI system
+    - Register as client-side mod
+    - Fix minor bug in Smooth control option
+
 ## Acknowledgements
 -------------------
 

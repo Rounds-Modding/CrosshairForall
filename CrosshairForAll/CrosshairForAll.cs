@@ -8,16 +8,23 @@ using Jotunn.Utils;
 using System.Runtime.CompilerServices;
 using InControl;
 using System.Reflection;
+using UnboundLib.Utils.UI;
+using TMPro;
+using UnityEngine.Events;
+using UnityEngine.UI;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace CrosshairForAll 
 {
     [BepInDependency("com.willis.rounds.unbound", BepInDependency.DependencyFlags.HardDependency)]
-    [BepInPlugin(ModId, ModName, "0.1.0.0")]
+    [BepInPlugin(ModId, ModName, "1.0.1")]
     [BepInProcess("Rounds.exe")]
     public class CrosshairForAll : BaseUnityPlugin
     {
         private const string ModId = "pykess-and-ascyst.rounds.plugins.crosshairforall";
         private const string ModName = "Crosshair For All";
+        private const string CompatibilityModName = "CrosshairForAll";
         internal static AssetBundle Assets;
 
         public static ConfigEntry<bool> ModActive;
@@ -28,16 +35,21 @@ namespace CrosshairForAll
         public static ConfigEntry<bool> ScaleEnemiesWithBulletSpeed;
         public static ConfigEntry<float> DistanceOffset;
 
+        private static List<Toggle> ControlTypeNone = new List<Toggle>() { };
+        private static List<Toggle> ControlTypeStepped = new List<Toggle>() { };
+        private static List<Toggle> ControlTypeSmooth = new List<Toggle>() { };
+
+
         private void Awake()
         {
             // bind configs with BepInEx
-            ModActive = Config.Bind("CrosshairForall", "Enabled", true);
-            ShowEnemyCrosshairs = Config.Bind("CrosshairForall", "ShowEnemyCrosshairs", false, "When enabled, draw crosshairs for enemies as well as for your player.");
-            MatchPlayerColor = Config.Bind("CrosshairForall", "MatchPlayerColor", true, "When enabled, draw crosshairs as the same color as the player using them.");
-            CrosshairControlType = Config.Bind("CrosshairForAll", "CrosshairControlType", 0, "0: No crosshair distance control\n1: Right stick button (R3) steps crosshair through three different ranges\n3: Right stick button (R3) smoothly move crosshair away, left stick button (L3) smoothly brings it back");
-            ScaleSelfWithBulletSpeed = Config.Bind("CrosshairForAll", "ScaleSelfWithBulletSpeed", false, "When enabled, your crosshair's position will depend on your bullet speed stat.");
-            ScaleEnemiesWithBulletSpeed = Config.Bind("CrosshairForAll", "ScaleEnemiesWithBulletSpeed", false, "When enabled, your enemies crosshairs' positions will depend on their bullet speed stats.");
-            DistanceOffset = Config.Bind("CrosshairForAll", "DistanceOffset", 0f, "Offset of the player's default crosshair distance, can be negative, positive, or zero.");
+            ModActive = Config.Bind(CompatibilityModName, "Enabled", true);
+            ShowEnemyCrosshairs = Config.Bind(CompatibilityModName, "ShowEnemyCrosshairs", true, "When enabled, draw crosshairs for enemies as well as for your player.");
+            MatchPlayerColor = Config.Bind(CompatibilityModName, "MatchPlayerColor", true, "When enabled, draw crosshairs as the same color as the player using them.");
+            CrosshairControlType = Config.Bind(CompatibilityModName, "CrosshairControlType", 0, "0: No crosshair distance control\n1: Right stick button (R3) steps crosshair through three different ranges\n3: Right stick button (R3) smoothly move crosshair away, left stick button (L3) smoothly brings it back");
+            ScaleSelfWithBulletSpeed = Config.Bind(CompatibilityModName, "ScaleSelfWithBulletSpeed", true, "When enabled, your crosshair's position will depend on your bullet speed stat.");
+            ScaleEnemiesWithBulletSpeed = Config.Bind(CompatibilityModName, "ScaleEnemiesWithBulletSpeed", true, "When enabled, your enemies crosshairs' positions will depend on their bullet speed stats.");
+            DistanceOffset = Config.Bind(CompatibilityModName, "DistanceOffset", 0f, "Offset of the player's default crosshair distance, can be negative, positive, or zero.");
 
             // apply patches
             new Harmony(ModId).PatchAll();
@@ -47,8 +59,87 @@ namespace CrosshairForAll
             // load assets
             CrosshairForAll.Assets = AssetUtils.LoadAssetBundleFromResources("crosshairwhite", typeof(CrosshairForAll).Assembly);
 
-            // add GUI to F1 menu
-            Unbound.RegisterGUI("Crosshair For All", new Action(this.DrawGUI));
+            // OLD GUI
+            //Unbound.RegisterGUI("Crosshair For All", new Action(this.DrawGUI));
+
+            // add credits
+            Unbound.RegisterCredits(ModName, new string[] { "Pykess (Code)", "Ascyst (Assets)" }, new string[] { "github", "Buy Pykess a coffee", "Buy Ascyst a coffee" }, new string[] { "https://github.com/Rounds-Modding/CrosshairForall", "https://www.buymeacoffee.com/Pykess", "https://www.buymeacoffee.com/Ascyst" });
+
+            // add GUI to modoptions menu
+            Unbound.RegisterMenu(ModName, () => { }, this.NewGUI, null, true);
+
+            // register as client-side
+            Unbound.RegisterClientSideMod(ModId);
+        }
+        private void NewGUI(GameObject menu)
+        {
+            MenuHandler.CreateText(ModName + " Options", menu, out TextMeshProUGUI _, 60);
+            void ModActiveChanged(bool val)
+            {
+                ModActive.Value = val;
+            }
+            MenuHandler.CreateToggle(ModActive.Value, "Enabled", menu, ModActiveChanged, 30);
+            void ShowEnemyCrosshairsChanged(bool val)
+            {
+                ShowEnemyCrosshairs.Value = val;
+            }
+            MenuHandler.CreateToggle(ShowEnemyCrosshairs.Value, "Show Other Players' Crosshairs", menu, ShowEnemyCrosshairsChanged, 30);
+            void MatchPlayerColorChanged(bool val)
+            {
+                MatchPlayerColor.Value = val;
+            }
+            MenuHandler.CreateToggle(MatchPlayerColor.Value, "Match Crosshair Color to Player Color", menu, MatchPlayerColorChanged, 30);
+            void ScaleSelfChanged(bool val)
+            {
+                ScaleSelfWithBulletSpeed.Value = val;
+            }
+            MenuHandler.CreateToggle(ScaleSelfWithBulletSpeed.Value, "Scale local players' crosshair distance with projectile speed", menu, ScaleSelfChanged, 30);
+            void ScaleEnemiesChanged(bool val)
+            {
+                ScaleEnemiesWithBulletSpeed.Value = val;
+            }
+            MenuHandler.CreateToggle(ScaleEnemiesWithBulletSpeed.Value, "Scale other players' crosshair distance with projectile speed", menu, ScaleEnemiesChanged, 30);
+            void ControlTypeChanged(int newControlType)
+            {
+                if (newControlType == 0)
+                {
+                    CrosshairControlType.Value = 0;
+                }
+                else if (newControlType == 1)
+                {
+                    CrosshairControlType.Value = 1;
+                }
+                else if (newControlType == 2)
+                {
+                    CrosshairControlType.Value = 2;
+                }
+                UpdateControlTypeGUI();
+            }
+            MenuHandler.CreateText("Control Type", menu, out TextMeshProUGUI _, 30);
+            ControlTypeNone.Add(MenuHandler.CreateToggle(CrosshairControlType.Value == 0, "None", menu, b => ControlTypeChanged(b ? 0 : -1), 30).GetComponent<Toggle>());
+            ControlTypeStepped.Add(MenuHandler.CreateToggle(CrosshairControlType.Value == 1, "Stepped", menu, b => ControlTypeChanged(b ? 1 : -2), 30).GetComponent<Toggle>());
+            ControlTypeSmooth.Add(MenuHandler.CreateToggle(CrosshairControlType.Value == 2, "Smooth", menu, b => ControlTypeChanged(b ? 2 : -3), 30).GetComponent<Toggle>());
+            void OffsetChanged(float val)
+            {
+                DistanceOffset.Value = val/10f;
+            }
+            MenuHandler.CreateSlider("Offset", menu, 30, -50f, 200f, DistanceOffset.Value, OffsetChanged, out Slider _, true);
+
+        }
+        private static void UpdateControlTypeGUI()
+        {
+            foreach (Toggle toggle in ControlTypeNone.Where(t => t != null))
+            {
+                toggle.isOn = CrosshairControlType.Value == 0;
+            }
+            foreach (Toggle toggle in ControlTypeStepped.Where(t => t != null))
+            {
+                toggle.isOn = CrosshairControlType.Value == 1;
+            }
+            foreach (Toggle toggle in ControlTypeSmooth.Where(t => t != null))
+            {
+                toggle.isOn = CrosshairControlType.Value == 2;
+            }
         }
         private void DrawGUI()
         {
@@ -315,10 +406,10 @@ namespace CrosshairForAll
                 float multiplier = 0f;
                 if (CrosshairForAll.ScaleSelfWithBulletSpeed.Value)
                 {
-                    multiplier = (this.gun.projectileSpeed - this.minProjectileSpeed) / (this.maxProjectileSpeed - this.minProjectileSpeed);
+                    multiplier = UnityEngine.Mathf.Clamp01((this.gun.projectileSpeed - this.minProjectileSpeed) / (this.maxProjectileSpeed - this.minProjectileSpeed));
                 }
 
-                this.smoothdistance = UnityEngine.Mathf.Clamp(this.smoothdistance, this.ranges[0], this.ranges[this.ranges.Length - 1]) - CrosshairForAll.DistanceOffset.Value;
+                this.smoothdistance = UnityEngine.Mathf.Clamp(this.smoothdistance, this.ranges[0], this.ranges[this.ranges.Length - 1]);
 
                 float extra = (this.ranges[this.ranges.Length - 1] - this.smoothdistance - CrosshairForAll.DistanceOffset.Value);
 
@@ -345,10 +436,15 @@ namespace CrosshairForAll
             this.gun = gun;
         }
     }
-    class GetPlayerColor
+    public class GetPlayerColor
     {
         public static Color GetColorMax(Player player)
         {
+            if (player.gameObject.GetComponentInChildren<PlayerSkinHandler>().simpleSkin)
+            {
+                return GetSimpleColor(player);
+            }
+
             // I "borrowed" this code from Willis
             Color colorMax = Color.clear;
             Color colorMin = Color.clear;
@@ -367,6 +463,11 @@ namespace CrosshairForAll
         }
         public static Color GetColorMin(Player player)
         {
+            if (player.gameObject.GetComponentInChildren<PlayerSkinHandler>().simpleSkin)
+            {
+                return GetSimpleColor(player);
+            }
+
             // I "borrowed" this code from Willis
             Color colorMax = Color.clear;
             Color colorMin = Color.clear;
@@ -382,6 +483,11 @@ namespace CrosshairForAll
             }
 
             return colorMin;
+        }
+
+        public static Color GetSimpleColor(Player player)
+        {
+            return player.gameObject.GetComponentInChildren<SetPlayerSpriteLayer>().transform.root.GetComponentInChildren<SpriteMask>().GetComponent<SpriteRenderer>().color;
         }
     }
 
